@@ -48,7 +48,7 @@ class NumericalExperimentation:
             func (callable): Function to integrate
             a (float): Lower limit
             b (float): Upper limit
-            method (str): Integration method ('quad', 'romberg', 'simpson')
+            method (str): Integration method ('quad', 'trapezoid', 'simpson')
             
         Returns:
             float: Integration result
@@ -61,13 +61,14 @@ class NumericalExperimentation:
         if method == 'quad':
             result, error = integrate.quad(func, a, b)
             return result
-        elif method == 'romberg':
-            # Need to create sample points for romberg
+        elif method == 'trapezoid':
+            # Use trapezoidal rule
             n_points = 100
             x = np.linspace(a, b, n_points)
             y = func(x)
             return integrate.trapezoid(y, x)
         else:
+            # Simpson's rule
             n_points = 100
             x = np.linspace(a, b, n_points)
             y = func(x)

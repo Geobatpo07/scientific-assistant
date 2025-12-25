@@ -83,9 +83,9 @@ class DataScienceTools:
             elif fill_na_method == 'mode':
                 df_clean = df_clean.fillna(df_clean.mode().iloc[0])
             elif fill_na_method == 'forward':
-                df_clean = df_clean.fillna(method='ffill')
+                df_clean = df_clean.ffill()
             elif fill_na_method == 'backward':
-                df_clean = df_clean.fillna(method='bfill')
+                df_clean = df_clean.bfill()
         
         return df_clean
     

@@ -51,7 +51,7 @@ class ModelingTools:
             return {
                 'model': model,
                 'coefficients': model.coef_,
-                'intercept': model.intercept_ if fit_intercept else 0,
+                'intercept': model.intercept_,
                 'r2_score': r2,
                 'predictions': y_pred
             }
