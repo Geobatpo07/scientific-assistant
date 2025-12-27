@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+.build
+.venv
+.env
+.git
+.gitignore
+.ipynb_checkpoints
+notebooks/
+logs/
+# Large data can be mounted as volume
+/data/*
+/chroma/*
