@@ -1,159 +1,180 @@
-# Teslas.ai - Multi-Agent Scientific Assistant 🚀🤖
+# 🧪 Scientific Assistant - Multi-Agent Research System
 
-A **local-first, multi-agent AI system** for rigorous scientific research in mathematics, numerical methods, and data science. Designed for researchers who demand accuracy and reproducibility.
+> **Assistant scientifique multi-agents local pour la recherche rigoureuse en mathématiques, méthodes numériques et data science.**
 
-## 🤖 Features
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![LangChain](https://img.shields.io/badge/LangChain-Powered-orange.svg)](https://www.langchain.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-purple.svg)](https://ollama.ai)
 
-### Multi-Agent Orchestration
-Teslas.ai leverages **8 specialized agents** working in concert:
+---
 
-1. **PlannerAgent** - Decompose research questions into structured tasks
-2. **MathematicalAnalystAgent** - Rigorous symbolic mathematics & proofs
-3. **NumericalSimulationAgent** - Numerical methods, discretization, convergence analysis
-4. **DataScientistAgent** - Statistical analysis, ML, uncertainty quantification
-5. **LiteratureResearchAgent** - Hybrid RAG + web search with proper citations
-6. **ReviewerAgent** - Quality control, error detection, rigor verification
-7. **ScientificWriterAgent** - Academic writing, LaTeX generation
-8. **MemoryAgent** - Knowledge management and persistent learning
+## 📋 Table des matières
 
-### 💾 Local-First Design
-- **Ollama** for local LLMs (mistral, neural-chat, etc.)
-- **ChromaDB** for semantic search without external APIs
-- **DuckDuckGo** for privacy-preserving web search
-- All computation runs on your machine
+- [Vue d'ensemble](#-vue-densemble)
+- [Fonctionnalités](#-fonctionnalités)
+- [Installation rapide](#-installation-rapide)
+- [Utilisation](#-utilisation)
+- [Architecture](#-architecture)
+- [Documentation](#-documentation)
+- [Développement](#-développement)
 
-### 📊 Comprehensive Analysis
-- Symbolic & numerical computation (SymPy, NumPy, SciPy)
-- Scientific document ingestion (PDF, TXT, Markdown)
-- Semantic search with embeddings (sentence-transformers)
-- Automated citation management (APA, BibTeX)
-- LaTeX equation generation
-- Reproducible code execution
+---
 
-### 🎯 Production-Ready
-- FastAPI REST API
-- Streamlit web UI
-- Structured logging
-- Error handling & recovery
-- Extensible architecture
+## 🎯 Vue d'ensemble
 
-## 🚀 Installation
+**Scientific Assistant** est un système multi-agents **local-first** conçu pour la recherche scientifique rigoureuse. Il combine 8 agents spécialisés avec RAG (Retrieval-Augmented Generation) pour fournir des analyses précises, reproductibles et citées.
 
-### Prerequisites
-- Python 3.11+
-- [Ollama](https://ollama.ai) running locally
-- [uv](https://github.com/astral-sh/uv) package manager (fast pip replacement)
+### ✨ Pourquoi Scientific Assistant ?
 
-### Quick Start
+- 🔒 **100% Local** - Vos données restent privées (Ollama + ChromaDB)
+- 🎯 **Spécialisé** - Conçu pour la recherche scientifique rigoureuse
+- 🤖 **Multi-agents** - 8 agents experts travaillent en synergie
+- 📚 **RAG avancé** - Recherche hybride vectorielle + mots-clés
+- 🔬 **Reproductible** - Génération de code Python exécutable
+- 📝 **Documentation** - LaTeX, citations APA/BibTeX automatiques
+
+### 🤖 Les 8 Agents spécialisés
+
+| Agent | Rôle | Expertise |
+|-------|------|-----------|
+| **Planner** | Orchestration | Décomposition des tâches de recherche |
+| **Mathematician** | Analyse symbolique | Preuves mathématiques, théorèmes |
+| **Numerical** | Simulation | Méthodes numériques, convergence |
+| **Data Scientist** | Statistiques | ML, analyse de données, incertitudes |
+| **Literature** | Recherche | RAG + web search, citations |
+| **Reviewer** | Qualité | Vérification, détection d'erreurs |
+| **Writer** | Rédaction | Écriture académique, LaTeX |
+| **Memory** | Connaissance | Gestion de la base de connaissances |
+
+---
+
+## 🚀 Fonctionnalités
+
+### 💡 Capacités principales
+
+- ✅ **Analyse mathématique** symbolique (SymPy)
+- ✅ **Simulations numériques** (NumPy, SciPy, scikit-learn)
+- ✅ **Ingestion de documents** (PDF, TXT, Markdown)
+- ✅ **Recherche sémantique** avec embeddings
+- ✅ **Génération de code** Python exécutable
+- ✅ **Citations automatiques** (APA, BibTeX)
+- ✅ **Export LaTeX** pour publications
+
+### 🏗️ Stack technique
+
+- **LLM** : Ollama (mistral, llama2, neural-chat...)
+- **Orchestration** : LangChain + LangGraph
+- **Vector DB** : ChromaDB + FAISS (hybrid)
+- **Embeddings** : sentence-transformers
+- **API** : FastAPI
+- **UI** : Streamlit
+- **Logging** : Loguru
+
+---
+
+## ⚡ Installation rapide
+
+### Prérequis
+
+- **Python 3.11+**
+- **[Ollama](https://ollama.ai)** installé et en cours d'exécution
+- **[uv](https://github.com/astral-sh/uv)** (gestionnaire de packages rapide)
+
+### Installation en 3 étapes
+
+#### 1️⃣ Installer uv et cloner le projet
 
 ```bash
-# Install uv (if not already installed)
-# Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-# macOS/Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# Clone repository
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Cloner le repository
 git clone https://github.com/Geobatpo07/scientific-assistant.git
 cd scientific-assistant
-
-# Install dependencies with uv (fast!)
-uv pip install -e .
-
-# Pull an Ollama model
-ollama pull mistral  # or neural-chat, dolphin-mixtral, etc.
-
-# Start Ollama server (in separate terminal)
-ollama serve
-
-# Launch Teslas.ai
-uv run python scripts/run_local.py
-# Or use the PowerShell helper:
-.\Makefile.ps1 run
 ```
 
-### Environment Setup
+#### 2️⃣ Installer les dépendances
 
 ```bash
-# Copy and customize environment file
+# Synchroniser l'environnement (très rapide avec uv!)
+uv sync
+
+# Télécharger un modèle Ollama
+ollama pull mistral
+```
+
+#### 3️⃣ Lancer l'application
+
+```bash
+# Méthode 1 : Script tout-en-un (recommandé)
+uv run python scripts/run_local.py
+
+# Méthode 2 : PowerShell
+.\Makefile.ps1 run
+
+# Méthode 3 : Docker
+docker compose up -d --build
+```
+
+**Accès** :
+- 🌐 Interface Web : http://localhost:8501
+- 📡 API : http://localhost:8000
+- 📚 Documentation API : http://localhost:8000/docs
+
+### 🎛️ Configuration (optionnel)
+
+```bash
+# Copier le fichier d'exemple
 cp .env.example .env
 
-# Edit .env if needed (defaults work for local setup)
+# Personnaliser si nécessaire (les valeurs par défaut fonctionnent)
+# - Modèle LLM
+# - Taille des chunks
+# - Niveau de log
+# etc.
 ```
 
-### Running Teslas.ai
+---
 
-**Option 1: Using uv (recommended)**
-```bash
-# Full application (API + UI)
-uv run python scripts/run_local.py
+## 💻 Utilisation
 
-# Or with PowerShell helper
-.\Makefile.ps1 run
-```
+### Interface Web (Streamlit)
 
-**Option 2: Individual components**
+1. Ouvrez http://localhost:8501
+2. Entrez votre question de recherche
+3. Sélectionnez les agents désirés
+4. Cliquez sur "Run Research"
+5. Explorez les résultats dans les onglets
 
-Terminal 1 - Start Ollama:
-```bash
-ollama serve
-```
-
-Terminal 2 - Start API:
-```bash
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-# Or: .\Makefile.ps1 api
-```
-
-Terminal 3 - Start UI:
-```bash
-uv run streamlit run app/ui/streamlit_app.py --theme.base dark
-# Or: .\Makefile.ps1 ui
-```
-
-Then open:
-- **API Documentation**: http://localhost:8000/docs
-- **UI**: http://localhost:8501
-
-### 🐳 Run with Docker (recommended for reproducibility)
-
-This runs Teslas.ai API and Ollama in separate containers with persistent volumes:
+### API REST
 
 ```bash
-# Build and start
-docker compose up -d --build
+# Lancer une recherche
+curl -X POST "http://localhost:8000/api/research" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Analyze stability of explicit Euler method",
+    "agents": ["planner", "mathematician", "numerical", "reviewer"]
+  }'
 
-# Tail logs
-docker compose logs -f api
+# Rechercher dans la base de connaissances
+curl -X POST "http://localhost:8000/api/search" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "finite difference methods",
+    "search_type": "scientific",
+    "max_results": 5
+  }'
 
-# Stop
-docker compose down
+# Vérifier le statut
+curl http://localhost:8000/api/health
 ```
 
-Endpoints:
-- API: http://localhost:8000
-- Docs: http://localhost:8000/docs
-
-Notes:
-- The API container talks to Ollama at `http://ollama:11434` over the Docker network.
-- ChromaDB data persists in the `chroma_data` volume.
-- Embeddings and other project data persist in the `data_volume`.
-- FAISS is rebuilt at startup from embeddings, ensuring consistency without duplicating storage.
-
-### Available Commands (PowerShell)
-
-```powershell
-.\Makefile.ps1 install    # Install dependencies
-.\Makefile.ps1 run        # Start full application
-.\Makefile.ps1 api        # Start API only
-.\Makefile.ps1 ui         # Start UI only
-.\Makefile.ps1 test       # Run tests
-.\Makefile.ps1 ingest     # Ingest documents
-.\Makefile.ps1 reset      # Reset knowledge base
-.\Makefile.ps1 clean      # Clean project
-```
-
-## 📖 Usage Examples
-
-### Via Python API
+### API Python
 
 ```python
 from app.agents.graph import create_orchestrator
@@ -174,182 +195,234 @@ print(context.numerical_results)
 curl -X POST "http://localhost:8000/api/research" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "Solve the heat equation using finite differences",
-    "agents": ["planner", "mathematician", "numerical", "reviewer"]
-  }'
-```
+# Créer l'orchestrateur
+orchestrator = create_orchestrator()
 
-### Via Web UI (Streamlit)
-1. Open http://localhost:8501
-2. Enter your research question
-3. Select desired agents
-4. Click "Run Research"
-5. Explore results in tabs
+# Lancer une recherche
+context = orchestrator.run_research(
+    "What are the stability conditions for the Euler method?"
+)
 
-## 📥 Document Ingestion
+# Accéder aux résultats
+print(context.final_summary)
+print(context.mathematical_insights)
+print(context.numerical_results)
+---
 
-Build your personal knowledge base:
+## 📚 Gestion de la base de connaissances
+
+### Ingestion de documents
 
 ```bash
-# Ingest a single PDF
-python scripts/ingest_docs.py data/papers/important_paper.pdf
+# Ingérer un PDF
+uv run python scripts/ingest_docs.py data/papers/mon_article.pdf
 
-# Ingest entire directory
-python scripts/ingest_docs.py data/papers/
+# Ingérer un dossier complet
+uv run python scripts/ingest_docs.py data/papers/
 
-# Reset knowledge base (careful!)
-python scripts/reset_db.py --confirm
+# Réinitialiser la base (attention !)
+uv run python scripts/reset_db.py --confirm
 ```
 
-## 🏗️ Project Structure
+**Formats supportés** : PDF, TXT, Markdown
+
+**Processus** :
+1. Chargement du document
+2. Découpage en chunks (avec overlap)
+3. Génération d'embeddings
+4. Stockage dans ChromaDB
+5. Indexation FAISS pour recherche rapide
+
+---
+
+## 🐳 Docker (Recommandé)
+
+```bash
+# Construire et démarrer
+docker compose up -d --build
+
+# Voir les logs
+---
+
+## 📐 Architecture
+
+### Structure du projet
 
 ```
 scientific-assistant/
-├── Dockerfile
-├── docker-compose.yml
-├── .dockerignore
-├── app/
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Configuration management
-│   ├── llm/                 # LLM integration
-│   ├── agents/              # Multi-agent system
-│   ├── ingestion/           # Document processing
-│   ├── vectorstore/         # ChromaDB + FAISS hybrid store
-│   ├── rag/                 # RAG chains
-│   ├── tools/               # Scientific tools
-│   ├── api/                 # REST API
-│   ├── ui/                  # Streamlit UI
-│   └── utils/               # Logging, helpers
-├── data/                    # Document storage
-├── chroma/                  # Vector DB persistence
-└── docker/
-  └── entrypoint.sh        # API entrypoint
-├── scripts/                 # Utility scripts
-├── tests/                   # Unit tests
-├── notebooks/               # Experiments
-├── pyproject.toml          # Dependencies
-├── .env.example            # Configuration template
-└── README.md
+├── 📁 app/                     # Code source principal
+│   ├── agents/                 # 🤖 Système multi-agents
+│   ├── vectorstore/            # 🗄️ ChromaDB + FAISS + LangChain-Chroma
+│   ├── llm/                    # 🧠 Intégration Ollama + Embeddings
+│   ├── rag/                    # 📚 Chaînes RAG + Citations
+│   ├── tools/                  # 🔧 Outils scientifiques
+│   ├── ingestion/              # 📥 Traitement documents
+│   ├── api/                    # 🌐 FastAPI REST
+│   ├── ui/                     # 🎨 Interface Streamlit
+│   └── utils/                  # 📝 Logging (Loguru), helpers
+├── 📁 docs/                    # 📖 Documentation complète
+├── 📁 examples/                # 💡 Exemples de code
+├── 📁 scripts/                 # 🛠️ Scripts utilitaires
+├── 📁 tests/                   # 🧪 Tests unitaires
+├── 📁 data/                    # 💾 Documents ingérés
+├── 📁 chroma/                  # 🗃️ Persistence ChromaDB
+├── 📄 pyproject.toml          # 📦 Dépendances (uv)
+├── 🐳 docker-compose.yml      # Docker orchestration
+└── 📄 README.md
 ```
 
-## 🧪 Testing
+### Flux de traitement
 
-```bash
-# Run tests
-pytest tests/
-
-# Run with coverage
-pytest --cov=app tests/
-
-# Specific test
-pytest tests/test_agents.py -v
+```
+Question → PlannerAgent → Routage spécialisé
+                ↓
+    ┌───────────┼───────────┐
+    ↓           ↓           ↓
+MathAgent  NumericalAgent  DataScientist
+    ↓           ↓           ↓
+    └───────────┼───────────┘
+                ↓
+         ReviewerAgent
+                ↓
+          WriterAgent
+                ↓
+          MemoryAgent
+                ↓
+         Résultat final
 ```
 
-## 🛠️ Development
+### Stack RAG hybride
 
-### Code Style
-- Black formatting
-- isort imports
-- mypy type checking
-- ruff linting
+- **ChromaDB** : Stockage persistant + métadonnées riches
+- **FAISS** : Recherche rapide top-K (IDs uniquement)
+- **LangChain-Chroma** : Intégration avec l'écosystème LangChain
+- **Reranking** : Similarité cosinus + boost mots-clés
+- **Fallback** : Si FAISS vide, utilise ChromaDB seul
+
+---
+
+## 📚 Documentation
+
+📖 **Documentation complète disponible dans [docs/](docs/)**
+
+### Guides principaux
+
+- 🚀 **[Guide de démarrage](docs/GETTING_STARTED.md)** - Installation et premiers pas
+- 🔗 **[LangChain-Chroma](docs/GUIDE_LANGCHAIN_CHROMA.md)** - Intégration vector store
+- 📝 **[Logging Loguru](docs/LOGURU_SUMMARY.md)** - Système de logs
+- 🎨 **[Design Guide](docs/DESIGN_GUIDE.md)** - Interface et design
+- 📑 **[Index complet](docs/README.md)** - Navigation complète
+
+### Exemples de code
+
+- `examples/example_5_langchain_chroma.py` - Utilisation ChromaDB
+- `examples/example_6_scientific_rag.py` - RAG scientifique
+- `examples/example_7_loguru_features.py` - Logging avancé
+
+---
+
+## 🛠️ Développement
+
+### Tests
 
 ```bash
-# Format code
+# Tous les tests
+uv run pytest tests/
+
+# Avec couverture
+uv run pytest --cov=app tests/
+
+# Test spécifique
+uv run pytest tests/test_agents.py -v
+```
+
+### Qualité du code
+
+```bash
+# Formatter (Black)
 black app/ tests/
 
-# Sort imports
+# Trier les imports
 isort app/ tests/
 
 # Type checking
 mypy app/
 
-# Lint
+# Linter
 ruff check app/
 ```
 
-## 🐛 Troubleshooting
+### Contribuer
 
-### Ollama not found
-```bash
-# Install Ollama from https://ollama.ai
-ollama serve  # Run in separate terminal
-```
-
-### ChromaDB errors
-```bash
-# Reset database
-python scripts/reset_db.py --confirm
-```
-
-### Memory issues
-- Reduce `CHUNK_SIZE` in `.env`
-- Use smaller LLM model (phi, mistral vs llama2-70b)
-- Limit `TOP_K_RETRIEVAL`
-
-## 📜 License
-
-MIT License - see LICENSE file
-
-## 🙏 Acknowledgments
-
-- Inspired by LangChain and LLamaIndex
-- Built with Ollama for local inference
-- ChromaDB for vector operations
-- Streamlit for rapid UI development
+1. Fork le projet
+2. Créez une branche (`git checkout -b feature/amazing`)
+3. Committez (`git commit -m 'Add amazing feature'`)
+4. Push (`git push origin feature/amazing`)
+5. Ouvrez une Pull Request
 
 ---
+
+## 🐛 Dépannage
+
+### Problèmes courants
+
+**Ollama introuvable**
+```bash
+# Installer depuis https://ollama.ai
+ollama serve  # Lancer dans un terminal séparé
+```
+
+**Erreurs ChromaDB**
+```bash
+# Réinitialiser la base de données
+uv run python scripts/reset_db.py --confirm
+```
+
+**Problèmes de mémoire**
+- Réduire `CHUNK_SIZE` dans `.env`
+- Utiliser un modèle plus petit (phi, mistral au lieu de llama2-70b)
+- Limiter `TOP_K_RETRIEVAL`
+
+**Logs pour débogage**
+```bash
+# Les logs sont dans logs/
+tail -f logs/scientific_assistant_*.log
+```
+
+### ⚙️ Optimisation des performances
+
+- **Modèles** : Préférer `mistral` ou `phi` pour l'itération rapide
+- **Température** : Garder basse (0.3) pour la reproductibilité
+- **Retrieval** : Ajuster `TOP_K_RETRIEVAL` (qualité vs vitesse)
+- **Chunking** : Optimiser `CHUNK_SIZE` et `CHUNK_OVERLAP`
+- **Docker** : Un seul worker par défaut, scaler prudemment
+
+---
+
+## 📜 Licence
+
+MIT License - voir [LICENSE](LICENSE)
+
+---
+
+## 🙏 Remerciements
+
+Construit avec :
+- **[LangChain](https://www.langchain.com/)** - Orchestration multi-agents
+- **[Ollama](https://ollama.ai)** - Inférence LLM locale
+- **[ChromaDB](https://www.trychroma.com/)** - Base vectorielle
+- **[Loguru](https://github.com/Delgan/loguru)** - Logging moderne
+- **[Streamlit](https://streamlit.io/)** - Interface rapide
+- **[FastAPI](https://fastapi.tiangolo.com/)** - API performante
+
+Inspiré par LangChain et LlamaIndex.
+
+---
+
+<div align="center">
 
 **Made with ⚡ for rigorous scientific research**
 
-Questions? Open an issue on GitHub!
+[Documentation](docs/) • [Examples](examples/) • [Issues](https://github.com/Geobatpo07/scientific-assistant/issues)
 
----
-
-## 📐 Architecture Overview
-
-- **FastAPI**: Serves the REST API for research requests and tools.
-- **LangChain + (LangGraph-inspired)**: Orchestrates agents with shared state and deterministic prompts.
-- **ChatOllama (LangChain)**: Single cached LLM client shared across agents. No direct HTTP calls.
-- **Hybrid Vector Store**:
-  - FAISS: Fast top-K candidate retrieval using embeddings (IDs only).
-  - ChromaDB: Persistent storage of documents + metadata.
-  - Rerank: Cosine similarity via sentence-transformers, optional keyword boost.
-  - Fallback: If FAISS is empty/unavailable, revert to pure Chroma search.
-
-Rationale: ChromaDB excels at persistence and metadata-rich retrieval. FAISS accelerates candidate selection. Combining both yields speed and quality without duplicate storage.
-
----
-
-## 🔌 Example Requests (Postman/curl)
-
-Research:
-```bash
-curl -X POST "http://localhost:8000/api/research" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "Analyze stability of explicit Euler for dy/dt = -ky",
-    "agents": ["planner", "mathematician", "numerical", "reviewer", "writer", "memory"]
-  }'
-```
-
-Search:
-```bash
-curl -X POST "http://localhost:8000/api/search" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "finite difference heat equation stability", "search_type": "scientific", "max_results": 5}'
-```
-
-Health:
-```bash
-curl http://localhost:8000/api/health
-```
-
----
-
-## ⚙️ Performance Considerations
-
-- Use smaller Ollama models for faster iteration (e.g., `mistral`, `phi`).
-- Keep temperature low (default 0.3) for deterministic results.
-- Adjust `TOP_K_RETRIEVAL` and rerank thresholds for throughput vs quality.
-- Chunking: Tune `CHUNK_SIZE` and `CHUNK_OVERLAP` in settings.
-- Docker: API runs with a single worker; scale cautiously to avoid memory contention.
+</div>

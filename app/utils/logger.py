@@ -1,95 +1,70 @@
-"""Structured logging configuration for Teslas.ai."""
+"""Logging configuration with Loguru."""
 
-import json
-import logging
 import sys
-from datetime import datetime
 from pathlib import Path
-from typing import Any
 
-import structlog
+from loguru import logger
 
 from app.config import settings
 
+# Remove default handler
+logger.remove()
+
+# Create logs directory if it doesn't exist
+logs_dir = settings.PROJECT_ROOT / "logs"
+logs_dir.mkdir(exist_ok=True)
+
+# Add console handler with custom format
+logger.add(
+    sys.stdout,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
+    level=settings.LOG_LEVEL,
+    colorize=True,
+)
+
+# Add file handler with rotation
+logger.add(
+    logs_dir / "scientific_assistant_{time:YYYY-MM-DD}.log",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+    level=settings.LOG_LEVEL,
+    rotation="00:00",  # New file every day at midnight
+    retention="30 days",  # Keep logs for 30 days
+    compression="zip",  # Compress old logs
+    enqueue=True,  # Thread-safe
+)
+
+# Add JSON file handler if LOG_FORMAT is json
+if hasattr(settings, 'LOG_FORMAT') and settings.LOG_FORMAT == "json":
+    logger.add(
+        logs_dir / "scientific_assistant_{time:YYYY-MM-DD}.json",
+        format="{message}",
+        level=settings.LOG_LEVEL,
+        rotation="00:00",
+        retention="30 days",
+        compression="zip",
+        serialize=True,  # Output as JSON
+        enqueue=True,
+    )
+
 
 def setup_logging() -> None:
-    """Configure structured logging with structlog and stdlib logging."""
+    """Setup logging configuration.
     
-    # Configure standard library logging
-    stdlib_log_format = (
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    
-    # Create logs directory if it doesn't exist
-    logs_dir = settings.PROJECT_ROOT / "logs"
-    logs_dir.mkdir(exist_ok=True)
-    
-    # File handler
-    file_handler = logging.FileHandler(logs_dir / "teslas_ai.log")
-    file_handler.setLevel(getattr(logging, settings.LOG_LEVEL))
-    file_formatter = logging.Formatter(stdlib_log_format)
-    file_handler.setFormatter(file_formatter)
-    
-    # Console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(getattr(logging, settings.LOG_LEVEL))
-    console_formatter = logging.Formatter(stdlib_log_format)
-    console_handler.setFormatter(console_formatter)
-    
-    # Root logger configuration
-    root_logger = logging.getLogger()
-    root_logger.setLevel(getattr(logging, settings.LOG_LEVEL))
-    root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
-    
-    # Configure structlog
-    processors = [
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-    ]
-    
-    if settings.LOG_FORMAT == "json":
-        processors.append(structlog.processors.JSONRenderer())
-    else:
-        processors.append(
-            structlog.dev.ConsoleRenderer()
-        )
-    
-    structlog.configure(
-        processors=processors,
-        context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+    Note: Loguru is auto-configured on import, but this function
+    is kept for backward compatibility with existing code.
+    """
+    pass
 
 
-def get_logger(name: str) -> structlog.BoundLogger:
-    """Get a logger instance with structured logging."""
-    return structlog.get_logger(name)
-
-
-class JSONFormatter(logging.Formatter):
-    """Custom JSON formatter for logging."""
+def get_logger(name: str = None):
+    """Get a logger instance.
     
-    def format(self, record: logging.LogRecord) -> str:
-        """Format log record as JSON."""
-        log_data = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-        }
+    Args:
+        name: Logger name (optional, for backward compatibility)
         
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
-        
-        if hasattr(record, "custom_data"):
-            log_data.update(record.custom_data)  # type: ignore
-        
-        return json.dumps(log_data)
+    Returns:
+        Loguru logger instance
+    """
+    if name:
+        return logger.bind(name=name)
+    return logger

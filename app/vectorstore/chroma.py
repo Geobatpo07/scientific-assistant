@@ -1,9 +1,12 @@
-"""ChromaDB integration for vector storage and retrieval."""
+"""ChromaDB integration for vector storage and retrieval using langchain-chroma."""
 
 from typing import List, Optional
 
 import chromadb
 from chromadb.config import Settings
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 
 from app.config import settings
 from app.llm.embeddings import get_embeddings
@@ -13,38 +16,43 @@ logger = get_logger(__name__)
 
 
 class ChromaVectorStore:
-    """Wrapper around ChromaDB for semantic search and RAG."""
+    """Wrapper around ChromaDB for semantic search and RAG using langchain-chroma."""
     
     def __init__(
         self,
         collection_name: str = settings.CHROMA_COLLECTION_NAME,
         persist_dir: str = str(settings.CHROMA_PERSIST_DIR),
     ):
-        """Initialize ChromaDB vector store."""
-        logger.info(f"Initializing ChromaDB with collection: {collection_name}")
+        """Initialize ChromaDB vector store with langchain-chroma integration."""
+        logger.info(f"Initializing ChromaDB with langchain-chroma integration: {collection_name}")
+        
+        self.collection_name = collection_name
+        self.persist_dir = persist_dir
+        self.embeddings = get_embeddings()
         
         # Create ChromaDB client (use ephemeral in tests)
         if "test" in collection_name.lower():
             self.client = chromadb.EphemeralClient()
-        else:
-            self.client = chromadb.PersistentClient(path=persist_dir)
-        self.collection_name = collection_name
-        self.embeddings = get_embeddings()
-        
-        # For tests, ensure a clean collection
-        if "test" in collection_name.lower():
+            # For tests, ensure a clean collection
             try:
                 self.client.delete_collection(name=collection_name)
             except Exception:
                 pass
+        else:
+            self.client = chromadb.PersistentClient(path=persist_dir)
         
-        # Get or create collection
-        self.collection = self.client.get_or_create_collection(
-            name=collection_name,
-            metadata={"hnsw:space": "cosine"}
+        # Initialize Chroma with langchain-chroma integration
+        self.vectorstore = Chroma(
+            client=self.client,
+            collection_name=collection_name,
+            embedding_function=self.embeddings,
+            collection_metadata={"hnsw:space": "cosine"}
         )
         
-        logger.info(f"ChromaDB initialized. Collection size: {self.collection.count()}")
+        # Keep reference to underlying collection for direct operations
+        self.collection = self.vectorstore._collection
+        
+        logger.info(f"ChromaDB initialized with langchain-chroma. Collection size: {self.count()}")
     
     def add_texts(
         self,
@@ -52,65 +60,74 @@ class ChromaVectorStore:
         metadatas: Optional[List[dict]] = None,
         ids: Optional[List[str]] = None,
     ) -> List[str]:
-        """Add texts to the vector store."""
-        logger.info(f"Adding {len(texts)} texts to ChromaDB")
-        
-        # Generate embeddings
-        embeddings = self.embeddings.embed_texts(texts)
-        
-        # Generate IDs if not provided
-        if ids is None:
-            ids = [f"doc_{i}" for i in range(len(texts))]
+        """Add texts to the vector store using langchain-chroma."""
+        logger.info(f"Adding {len(texts)} texts to ChromaDB via langchain-chroma")
         
         # Ensure metadatas is provided
         if metadatas is None:
             metadatas = [{"source": "unknown"} for _ in texts]
         
-        # Add to collection
-        self.collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=texts,
+        # Use langchain-chroma's add_texts method
+        # This handles embedding generation automatically
+        result_ids = self.vectorstore.add_texts(
+            texts=texts,
             metadatas=metadatas,
+            ids=ids,
         )
         
-        logger.info(f"Added {len(texts)} texts. Collection size: {self.collection.count()}")
-        return ids
+        logger.info(f"Added {len(texts)} texts. Collection size: {self.count()}")
+        return result_ids
+    
+    def add_documents(
+        self,
+        documents: List[Document],
+        ids: Optional[List[str]] = None,
+    ) -> List[str]:
+        """Add LangChain documents to the vector store."""
+        logger.info(f"Adding {len(documents)} documents to ChromaDB")
+        
+        # Use langchain-chroma's add_documents method
+        result_ids = self.vectorstore.add_documents(
+            documents=documents,
+            ids=ids,
+        )
+        
+        logger.info(f"Added {len(documents)} documents. Collection size: {self.count()}")
+        return result_ids
     
     def search(
         self,
         query: str,
         k: int = 5,
     ) -> List[dict]:
-        """Search for similar documents."""
+        """Search for similar documents using langchain-chroma similarity search."""
         logger.info(f"Searching for: {query[:100]}...")
         
-        # Generate query embedding
-        query_embedding = self.embeddings.embed_text(query)
-        
-        # Search in collection
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=k,
+        # Use langchain-chroma's similarity_search_with_score method
+        results = self.vectorstore.similarity_search_with_score(
+            query=query,
+            k=k,
         )
         
         # Format results
-        if not results["documents"] or not results["documents"][0]:
+        if not results:
             logger.info("No results found")
             return []
         
         formatted_results = []
         query_terms = {t.lower() for t in query.split() if len(t) > 2}
-        for i in range(len(results["documents"][0])):
-            content = results["documents"][0][i]
+        
+        for doc, distance in results:
+            content = doc.page_content
             item = {
                 "content": content,
-                "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                "distance": results["distances"][0][i] if results["distances"] else None,
+                "metadata": doc.metadata,
+                "distance": distance,
             }
             # Compute semantic similarity for better reranking
             try:
-                item["score"] = self.embeddings.similarity(query, content)
+                # Convert distance to similarity score (lower distance = higher similarity)
+                item["score"] = 1.0 / (1.0 + distance) if distance is not None else None
             except Exception:
                 item["score"] = None
             # Keyword boost if any query term appears in content
@@ -153,10 +170,18 @@ class ChromaVectorStore:
         logger.info(f"Found {len(formatted_results)} relevant documents")
         return formatted_results
     
+    def as_retriever(self, **kwargs):
+        """Return a LangChain retriever interface."""
+        return self.vectorstore.as_retriever(**kwargs)
+    
     def delete_collection(self) -> None:
         """Delete the entire collection."""
         logger.warning(f"Deleting collection: {self.collection_name}")
-        self.client.delete_collection(name=self.collection_name)
+        self.vectorstore.delete_collection()
+        try:
+            self.client.delete_collection(name=self.collection_name)
+        except Exception:
+            pass
     
     def count(self) -> int:
         """Get number of documents in collection."""
