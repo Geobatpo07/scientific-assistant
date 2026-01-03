@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.config import ExecutionMode
+
 
 class ResearchRequest(BaseModel):
     """Request for scientific research."""
@@ -12,6 +14,10 @@ class ResearchRequest(BaseModel):
     agents: Optional[List[str]] = Field(
         default=None,
         description="List of agents to use (planner, mathematician, numerical, data_scientist, literature, reviewer, writer, memory)"
+    )
+    mode: ExecutionMode = Field(
+        default=ExecutionMode.FAST,
+        description="Execution mode: 'fast' for quick answers (minimal latency, reduced agents), 'full' for deep research (maximum rigor, all agents)"
     )
     stream: bool = Field(default=False, description="Stream results")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
@@ -30,6 +36,7 @@ class ResearchResponse(BaseModel):
     """Response with research results."""
     
     query: str
+    mode: str = Field(default="fast", description="Execution mode used (fast or full)")
     status: str = Field(default="completed")
     summary: str
     mathematical_insights: List[str] = Field(default_factory=list)

@@ -1,202 +1,183 @@
-"""ChromaDB integration for vector storage and retrieval using langchain-chroma."""
+"""ChromaDB integration backed by Hugging Face embeddings (CPU-only)."""
 
-from typing import List, Optional
+from __future__ import annotations
+
+import uuid
+from typing import Dict, List, Optional
 
 import chromadb
 from chromadb.config import Settings
-from langchain_chroma import Chroma
-from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
 
 from app.config import settings
-from app.llm.embeddings import get_embeddings
+from app.hf.embeddings import get_hf_embeddings, HfEmbeddingService
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class ChromaVectorStore:
-    """Wrapper around ChromaDB for semantic search and RAG using langchain-chroma."""
-    
+    """ChromaDB wrapper that persists documents, embeddings, and metadata."""
+
     def __init__(
         self,
         collection_name: str = settings.CHROMA_COLLECTION_NAME,
         persist_dir: str = str(settings.CHROMA_PERSIST_DIR),
-    ):
-        """Initialize ChromaDB vector store with langchain-chroma integration."""
-        logger.info(f"Initializing ChromaDB with langchain-chroma integration: {collection_name}")
-        
+        embedding_service: Optional[HfEmbeddingService] = None,
+    ) -> None:
+        logger.info(f"Initializing ChromaDB (persistent) collection={collection_name}")
+
         self.collection_name = collection_name
         self.persist_dir = persist_dir
-        self.embeddings = get_embeddings()
-        
-        # Create ChromaDB client (use ephemeral in tests)
+        self.embeddings = embedding_service or get_hf_embeddings()
+
+        client_settings = Settings(anonymized_telemetry=False)
+
         if "test" in collection_name.lower():
-            self.client = chromadb.EphemeralClient()
-            # For tests, ensure a clean collection
+            self.client = chromadb.EphemeralClient(settings=client_settings)
             try:
                 self.client.delete_collection(name=collection_name)
             except Exception:
                 pass
         else:
-            self.client = chromadb.PersistentClient(path=persist_dir)
-        
-        # Initialize Chroma with langchain-chroma integration
-        self.vectorstore = Chroma(
-            client=self.client,
-            collection_name=collection_name,
-            embedding_function=self.embeddings,
-            collection_metadata={"hnsw:space": "cosine"}
+            self.client = chromadb.PersistentClient(path=persist_dir, settings=client_settings)
+
+        self.collection = self.client.get_or_create_collection(
+            name=collection_name,
+            metadata={"hnsw:space": "cosine"},
         )
-        
-        # Keep reference to underlying collection for direct operations
-        self.collection = self.vectorstore._collection
-        
-        logger.info(f"ChromaDB initialized with langchain-chroma. Collection size: {self.count()}")
-    
+
+        logger.info(f"ChromaDB ready. Count={self.count()}")
+
+    def _normalize_inputs(
+        self,
+        texts: List[str],
+        metadatas: Optional[List[dict]] = None,
+        ids: Optional[List[str]] = None,
+        embeddings: Optional[List[List[float]]] = None,
+    ) -> Dict[str, List]:
+        if metadatas is None:
+            metadatas = [{"source": "unknown"} for _ in texts]
+        if ids is None:
+            ids = [str(uuid.uuid4()) for _ in texts]
+        if embeddings is None:
+            embeddings = self.embeddings.embed_documents(texts)
+
+        if not (len(texts) == len(metadatas) == len(ids) == len(embeddings)):
+            raise ValueError("Texts, metadatas, ids, and embeddings must align")
+
+        return {
+            "documents": texts,
+            "metadatas": metadatas,
+            "ids": ids,
+            "embeddings": embeddings,
+        }
+
     def add_texts(
         self,
         texts: List[str],
         metadatas: Optional[List[dict]] = None,
         ids: Optional[List[str]] = None,
+        embeddings: Optional[List[List[float]]] = None,
     ) -> List[str]:
-        """Add texts to the vector store using langchain-chroma."""
-        logger.info(f"Adding {len(texts)} texts to ChromaDB via langchain-chroma")
-        
-        # Ensure metadatas is provided
-        if metadatas is None:
-            metadatas = [{"source": "unknown"} for _ in texts]
-        
-        # Use langchain-chroma's add_texts method
-        # This handles embedding generation automatically
-        result_ids = self.vectorstore.add_texts(
-            texts=texts,
-            metadatas=metadatas,
-            ids=ids,
-        )
-        
-        logger.info(f"Added {len(texts)} texts. Collection size: {self.count()}")
-        return result_ids
-    
-    def add_documents(
-        self,
-        documents: List[Document],
-        ids: Optional[List[str]] = None,
-    ) -> List[str]:
-        """Add LangChain documents to the vector store."""
-        logger.info(f"Adding {len(documents)} documents to ChromaDB")
-        
-        # Use langchain-chroma's add_documents method
-        result_ids = self.vectorstore.add_documents(
-            documents=documents,
-            ids=ids,
-        )
-        
-        logger.info(f"Added {len(documents)} documents. Collection size: {self.count()}")
-        return result_ids
-    
-    def search(
-        self,
-        query: str,
-        k: int = 5,
-    ) -> List[dict]:
-        """Search for similar documents using langchain-chroma similarity search."""
-        logger.info(f"Searching for: {query[:100]}...")
-        
-        # Use langchain-chroma's similarity_search_with_score method
-        results = self.vectorstore.similarity_search_with_score(
-            query=query,
-            k=k,
-        )
-        
-        # Format results
-        if not results:
-            logger.info("No results found")
+        """Persist texts + metadata + embeddings into ChromaDB."""
+        payload = self._normalize_inputs(texts, metadatas, ids, embeddings)
+        self.collection.add(**payload)
+        logger.info("ChromaDB add_texts", count=len(payload["ids"]))
+        return payload["ids"]
+
+    def search(self, query: str, k: int = 5) -> List[dict]:
+        """Vector search using stored embeddings (no re-embedding of documents)."""
+        logger.info(f"Chroma search: {query[:80]}")
+
+        query_embedding = self.embeddings.embed_query(query)
+        if not query_embedding:
             return []
-        
-        formatted_results = []
-        query_terms = {t.lower() for t in query.split() if len(t) > 2}
-        
-        for doc, distance in results:
-            content = doc.page_content
-            item = {
-                "content": content,
-                "metadata": doc.metadata,
-                "distance": distance,
-            }
-            # Compute semantic similarity for better reranking
-            try:
-                # Convert distance to similarity score (lower distance = higher similarity)
-                item["score"] = 1.0 / (1.0 + distance) if distance is not None else None
-            except Exception:
-                item["score"] = None
-            # Keyword boost if any query term appears in content
-            lc = content.lower()
-            item["keyword_match"] = any(term in lc for term in query_terms)
-            formatted_results.append(item)
-        
-        # Rerank by score (descending) when available, otherwise by distance (ascending)
-        formatted_results.sort(
-            key=lambda x: (
-                1 if x.get("keyword_match") else 0,
-                x["score"] if x.get("score") is not None else float("-inf"),
-                -x["distance"] if x.get("distance") is not None else 0.0,
-            ),
-            reverse=True,
+
+        results = self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=k,
+            include=["documents", "metadatas", "distances", "ids"],
         )
 
-        # If no top match contains a keyword, perform a light keyword scan over collection
-        if formatted_results and not formatted_results[0].get("keyword_match") and query_terms:
-            try:
-                all_docs = self.collection.get(include=["documents", "metadatas"])
-                docs_list = all_docs.get("documents") or []
-                metas_list = all_docs.get("metadatas") or []
-                for idx, doc in enumerate(docs_list):
-                    if doc and any(term in doc.lower() for term in query_terms):
-                        boosted = {
-                            "content": doc,
-                            "metadata": metas_list[idx] if idx < len(metas_list) else {},
-                            "distance": None,
-                            "score": 1.0,
-                            "keyword_match": True,
-                        }
-                        # Ensure keyword-relevant document is first
-                        formatted_results.insert(0, boosted)
-                        break
-            except Exception:
-                # If scanning fails, keep original ordering
-                pass
+        docs = results.get("documents") or [[]]
+        metas = results.get("metadatas") or [[]]
+        distances = results.get("distances") or [[]]
+        ids = results.get("ids") or [[]]
+
+        formatted = []
+        for idx, content in enumerate(docs[0]):
+            meta = metas[0][idx] if idx < len(metas[0]) else {}
+            distance = distances[0][idx] if idx < len(distances[0]) else None
+            doc_id = ids[0][idx] if idx < len(ids[0]) else None
+            score = 1.0 / (1.0 + distance) if distance is not None else None
+            formatted.append(
+                {
+                    "id": doc_id,
+                    "content": content,
+                    "metadata": meta,
+                    "distance": distance,
+                    "score": score,
+                }
+            )
+
+        logger.info(f"Chroma search returned {len(formatted)} results")
+        return formatted
+
+    def get_by_ids(self, ids: List[str]) -> List[dict]:
+        """Return documents + metadata by ids without re-embedding."""
+        if not ids:
+            return []
+
+        results = self.collection.get(ids=ids, include=["documents", "metadatas", "embeddings"])
+        documents = results.get("documents")
+        metadatas = results.get("metadatas")
+        embeddings = results.get("embeddings")
         
-        logger.info(f"Found {len(formatted_results)} relevant documents")
-        return formatted_results
-    
-    def as_retriever(self, **kwargs):
-        """Return a LangChain retriever interface."""
-        return self.vectorstore.as_retriever(**kwargs)
-    
+        # Handle None or numpy arrays
+        if documents is None:
+            documents = []
+        if metadatas is None:
+            metadatas = []
+        if embeddings is None:
+            embeddings = []
+            
+        returned_ids = ids  # Use the requested ids since ChromaDB returns them in order
+
+        assembled = []
+        for i, content in enumerate(documents):
+            assembled.append(
+                {
+                    "id": returned_ids[i] if i < len(returned_ids) else None,
+                    "content": content,
+                    "metadata": metadatas[i] if i < len(metadatas) else {},
+                    "embedding": embeddings[i] if i < len(embeddings) else None,
+                }
+            )
+        return assembled
+
+    def export_embeddings(self) -> Dict[str, List]:
+        """Export embeddings + ids to allow FAISS rebuild."""
+        data = self.collection.get(include=["embeddings"])
+        embeddings = data.get("embeddings")
+        # Handle numpy arrays or None
+        if embeddings is None:
+            embeddings = []
+        return {
+            "ids": data.get("ids") or [],
+            "embeddings": embeddings if hasattr(embeddings, '__len__') else [],
+        }
+
     def delete_collection(self) -> None:
         """Delete the entire collection."""
         logger.warning(f"Deleting collection: {self.collection_name}")
-        self.vectorstore.delete_collection()
         try:
             self.client.delete_collection(name=self.collection_name)
         except Exception:
             pass
-    
+
     def count(self) -> int:
-        """Get number of documents in collection."""
-        return self.collection.count()
-
-
-# Global vector store instance
-_vector_store: Optional[ChromaVectorStore] = None
-
-
-def get_vector_store() -> ChromaVectorStore:
-    """Get or create vector store instance."""
-    global _vector_store
-    
-    if _vector_store is None:
-        _vector_store = ChromaVectorStore()
-    
-    return _vector_store
+        """Number of documents in collection."""
+        try:
+            return self.collection.count()
+        except Exception:
+            return 0

@@ -5,6 +5,7 @@ from typing import Optional
 from app.agents.states import ResearchContext
 from app.llm.ollama import get_llm
 from app.llm.prompts import AgentRole, DATA_SCIENCE_PROMPTS, get_system_prompt
+from app.tools.calculator import ScientificCalculator
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -16,6 +17,7 @@ class DataScientistAgent:
     def __init__(self):
         """Initialize data scientist agent."""
         self.llm = get_llm(temperature=0.3)
+        self.calculator = ScientificCalculator()
         self.system_prompt = get_system_prompt(AgentRole.DATA_SCIENTIST)
     
     def analyze(self, query: str, context: ResearchContext) -> ResearchContext:
@@ -50,6 +52,15 @@ Be thorough and scientifically rigorous."""
             except Exception as e:
                 logger.warning(f"LLM data scientist invocation failed: {e}")
                 analysis_text = "Data science analysis unavailable from LLM; use validators and metrics heuristics."
+                
+                # Fallback: Use calculator for statistical analysis
+                try:
+                    calc_result = self._calculator_assisted_analysis(query, analysis_type)
+                    if calc_result:
+                        analysis_text += f"\n\n[CALCULATOR ASSISTED]\n{calc_result}"
+                except Exception as calc_e:
+                    logger.warning(f"Calculator assisted analysis also failed: {calc_e}")
+            
             context.data_analysis["insights"] = analysis_text
             
             # Extract findings
@@ -64,6 +75,30 @@ Be thorough and scientifically rigorous."""
             context.errors.append(f"Data science analysis failed: {str(e)}")
         
         return context
+    
+    def _calculator_assisted_analysis(self, query: str, analysis_type: str) -> Optional[str]:
+        """Use calculator to assist with data science analysis when LLM unavailable."""
+        try:
+            if analysis_type == "model_selection":
+                return ("Recommended models: For supervised learning, consider "
+                       "logistic regression (binary), linear regression (continuous), "
+                       "or ensemble methods. Available in calculator: logistic_regression.")
+            
+            elif analysis_type == "eda":
+                return ("Exploratory data analysis recommendations: Use statistical_summary() "
+                       "from calculator to generate: mean, std, min, max, quartiles, skewness, "
+                       "kurtosis for dataset characterization.")
+            
+            elif analysis_type == "uncertainty":
+                return ("Uncertainty quantification: Calculator provides confidence intervals "
+                       "in linear regression, and classification metrics (precision, recall, F1) "
+                       "for robustness assessment.")
+            
+        except Exception as e:
+            logger.debug(f"Calculator assisted analysis error: {e}")
+            return None
+        
+        return None
     
     @staticmethod
     def _determine_analysis_type(query: str) -> str:

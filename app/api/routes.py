@@ -48,18 +48,30 @@ async def health_check():
 
 @router.post("/research", response_model=ResearchResponse)
 async def research(request: ResearchRequest):
-    """Execute scientific research."""
-    logger.info(f"Research request: {request.query}")
+    """Execute scientific research with specified execution mode.
+    
+    Execution Modes:
+    - FAST: Quick answers, minimal latency, reduced agents (~few minutes)
+      * Runs: planner (optional), mathematician (optional), writer
+      * Skips: reviewer, memory, data_scientist
+      * RAG: top-k=15, chunks=3
+    
+    - FULL: Deep research, maximum rigor, all agents (~tens of minutes)
+      * Runs: ALL agents (planner, mathematician, numerical, literature, reviewer, writer, memory)
+      * RAG: top-k=30, chunks=5, web search enabled
+    """
+    logger.info(f"Research request: {request.query} [Mode: {request.mode.value.upper()}]")
     
     try:
-        # Run research
-        context = get_assistant().research(request.query, request.agents)
+        # Run research with specified mode
+        context = get_assistant().research(request.query, request.agents, request.mode)
         
         # Format response
         latex_doc = context.metadata.get("latex_document")
         
         return ResearchResponse(
             query=context.main_query,
+            mode=request.mode.value,
             status="completed" if not context.errors else "completed_with_errors",
             summary=context.final_summary,
             mathematical_insights=context.mathematical_insights,

@@ -1,8 +1,8 @@
-version: "3.9"
-
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile
     container_name: teslas_api
     environment:
       - API_HOST=0.0.0.0
@@ -18,6 +18,25 @@ services:
     volumes:
       - chroma_data:/app/chroma
       - ./data:/app/data
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: app/ui/Dockerfile
+    container_name: teslas_ui
+    command: >-
+      streamlit run app/ui/streamlit_app.py
+      --server.port=8501
+      --server.address=0.0.0.0
+      --browser.gatherUsageStats=false
+    environment:
+      - TESLAS_API_URL=http://api:8000/api
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_started
     restart: unless-stopped
 
   ollama:
@@ -45,5 +64,4 @@ services:
 
 volumes:
   chroma_data:
-  data_volume:
   ollama_models:

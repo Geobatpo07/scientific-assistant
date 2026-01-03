@@ -51,6 +51,15 @@ Be rigorous and explicit in all steps."""
             except Exception as e:
                 logger.warning(f"LLM mathematician invocation failed: {e}")
                 analysis_text = "Mathematical analysis unavailable from LLM; rely on symbolic and numeric validators."
+                
+                # Fallback: Use calculator for symbolic analysis
+                try:
+                    calc_result = self._calculator_assisted_analysis(query, analysis_type)
+                    if calc_result:
+                        analysis_text += f"\n\n[CALCULATOR ASSISTED]\n{calc_result}"
+                except Exception as calc_e:
+                    logger.warning(f"Calculator assisted analysis also failed: {calc_e}")
+            
             context.mathematical_insights.append(analysis_text)
             
             # Try to extract equations
@@ -65,6 +74,40 @@ Be rigorous and explicit in all steps."""
             context.errors.append(f"Mathematical analysis failed: {str(e)}")
         
         return context
+    
+    def _calculator_assisted_analysis(self, query: str, analysis_type: str) -> Optional[str]:
+        """Use calculator to assist with mathematical analysis when LLM unavailable."""
+        try:
+            # Try to extract mathematical expression from query
+            import re
+            expr_pattern = r'(?:of|for)\s+([x\w\d\^*+\-/().\s]+)(?:\s|$)'
+            matches = re.findall(expr_pattern, query, re.IGNORECASE)
+            
+            if not matches:
+                return None
+            
+            expr = matches[0].strip()
+            
+            if analysis_type == "differentiation":
+                result = self.calculator.symbolic.differentiate(expr, "x")
+                if result.success:
+                    return f"Derivative: d/dx[{expr}] = {result.results.get('simplified', 'N/A')}"
+            
+            elif analysis_type == "integration":
+                result = self.calculator.symbolic.integrate(expr, "x")
+                if result.success:
+                    return f"Integral: ∫{expr}dx = {result.results.get('simplified', 'N/A')}"
+            
+            elif analysis_type == "series":
+                result = self.calculator.symbolic.taylor_series(expr, "x", 0, 3)
+                if result.success:
+                    return f"Series: {result.results.get('series', 'N/A')}"
+            
+        except Exception as e:
+            logger.debug(f"Calculator assisted analysis error: {e}")
+            return None
+        
+        return None
     
     @staticmethod
     def _determine_analysis_type(query: str) -> str:

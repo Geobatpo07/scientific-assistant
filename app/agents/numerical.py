@@ -5,6 +5,7 @@ from typing import Optional
 from app.agents.states import ResearchContext
 from app.llm.ollama import get_llm
 from app.llm.prompts import AgentRole, NUMERICAL_PROMPTS, get_system_prompt
+from app.tools.calculator import ScientificCalculator
 from app.tools.python_exec import PythonExecutor
 from app.utils.logger import get_logger
 
@@ -17,6 +18,7 @@ class NumericalSimulationAgent:
     def __init__(self):
         """Initialize numerical simulation agent."""
         self.llm = get_llm(temperature=0.2)
+        self.calculator = ScientificCalculator()
         self.python_executor = PythonExecutor()
         self.system_prompt = get_system_prompt(AgentRole.NUMERICAL)
     
@@ -52,6 +54,15 @@ Be specific and practical."""
             except Exception as e:
                 logger.warning(f"LLM numerical invocation failed: {e}")
                 recommendations = "Numerical recommendations unavailable from LLM; proceed with stability checks."
+                
+                # Fallback: Use calculator for numerical analysis
+                try:
+                    calc_result = self._calculator_assisted_analysis(query, sim_type)
+                    if calc_result:
+                        recommendations += f"\n\n[CALCULATOR ASSISTED]\n{calc_result}"
+                except Exception as calc_e:
+                    logger.warning(f"Calculator assisted analysis also failed: {calc_e}")
+            
             context.numerical_results["recommendations"] = recommendations
             
             # Try to extract and execute code
@@ -69,6 +80,35 @@ Be specific and practical."""
             context.errors.append(f"Numerical simulation failed: {str(e)}")
         
         return context
+    
+    def _calculator_assisted_analysis(self, query: str, sim_type: str) -> Optional[str]:
+        """Use calculator to assist with numerical analysis when LLM unavailable."""
+        try:
+            if sim_type == "ode_solver":
+                return ("ODE Solver Recommendation: Use Euler method for non-stiff systems. "
+                       "Calculator provides euler_stability_analysis() to check stability conditions. "
+                       "Use dt << lambda_min for stability (lambda_min = smallest eigenvalue).")
+            
+            elif sim_type == "optimization":
+                return ("Optimization Recommendation: For convex problems (logistic regression), "
+                       "use gradient descent via calculator.gradient_descent_visualization(). "
+                       "Guaranteed convergence with proper learning rate selection.")
+            
+            elif sim_type == "convergence":
+                return ("Convergence Analysis: Calculator provides convergence_rate_generator() "
+                       "and richardson_extrapolation() for quantifying convergence rates. "
+                       "Use for mesh refinement studies and error estimation.")
+            
+            elif sim_type == "error_analysis":
+                return ("Error Analysis: Calculate discretization error using richardson_extrapolation() "
+                       "to estimate true error from multiple grid refinements. "
+                       "Provides posterior error bounds for adaptive methods.")
+            
+        except Exception as e:
+            logger.debug(f"Calculator assisted analysis error: {e}")
+            return None
+        
+        return None
     
     @staticmethod
     def _determine_simulation_type(query: str) -> str:
