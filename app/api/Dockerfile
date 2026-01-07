@@ -11,7 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_SYSTEM_PYTHON=1 \
     UV_HTTP_TIMEOUT=1200 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
 
 # ------------------------------------------------------------
 # HARD BLOCK CUDA / GPU (CRITICAL)
