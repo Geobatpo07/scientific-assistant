@@ -1,0 +1,46 @@
+{
+  "components": {
+    "HF Embeddings": {
+      "status": "PASS",
+      "message": "384D vectors, batch OK, singleton OK",
+      "duration": 12.201734781265259
+    },
+    "HF Reranker": {
+      "status": "PASS",
+      "message": "3 candidates reranked, singleton OK",
+      "duration": 6.866029739379883
+    },
+    "Vector Store": {
+      "status": "PASS",
+      "message": "Stored 4 docs, search+rerank OK",
+      "duration": 2.15632700920105
+    },
+    "Ollama LLM": {
+      "status": "WARN",
+      "message": "Ollama connection: Ollama call failed with status code 404. Maybe your model is not found and you should pull the model with `ollama pull mistral`.",
+      "duration": 0
+    }
+  },
+  "pipeline": {
+    "RAG Pipeline": {
+      "status": "FAIL",
+      "message": "Ollama call failed with status code 404. Maybe your model is not found and you should pull the model with `ollama pull mistral`.",
+      "duration": 0
+    }
+  },
+  "agents": {
+    "Research Orchestrator": {
+      "status": "PASS",
+      "message": "Orchestrator executed, research completed",
+      "duration": 2.939755916595459
+    }
+  },
+  "end_to_end": {
+    "Complete Workflow": {
+      "status": "FAIL",
+      "message": "'charmap' codec can't encode character '\\u2713' in position 2: character maps to <undefined>",
+      "duration": 0
+    }
+  },
+  "timestamp": 1767327571.9190483
+}

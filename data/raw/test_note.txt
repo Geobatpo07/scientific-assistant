@@ -1,0 +1,3 @@
+Titre: Stabilité de l'Euler explicite
+
+Pour l'équation dy/dt = -k y, le schéma Euler explicite est stable si |1 - k h| < 1, soit 0 < h < 2/k. La condition est liée au domaine de stabilité du schéma appliqué au mode test y' = λ y avec λ = -k.
